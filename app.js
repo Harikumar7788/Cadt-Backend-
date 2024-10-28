@@ -17,6 +17,22 @@ const userSchema = new mongoose.Schema({
   username: String,
   password: String
 });
+
+const furnitureSchema = new mongoose.Schema({
+  modelType: String,
+  FurnituresImagesArraywithGltf: [
+    {
+      furnitureName: String,         
+      furnitureImage: String,        
+      furnitureGltfLoader: Buffer,   
+    },
+  ],
+});
+
+const Furniture = mongoose.model('Furnitures', furnitureSchema);
+
+
+
 const admins = mongoose.model('Clients', userSchema);
 
 app.post("/login", async (request, response) => {
@@ -81,6 +97,36 @@ app.get("/users", async (request, response) => {
     response.status(500).send("Server Error!");
   }
 });
+
+
+app.post('/furnitures', async (request, response) => {
+  try {
+    const { modelType, FurnituresImagesArraywithGltf } = request.body;
+     console.log("Api Running!!!!!.....")
+    const furnitureData = new Furniture({
+      modelType,
+      FurnituresImagesArraywithGltf,
+    });
+
+    const savedFurniture = await furnitureData.save();
+    response.status(201).json({ message: 'Furniture saved successfully', data: savedFurniture });
+  } catch (error) {
+    response.status(500).json({ message: 'Error saving furniture data', error });
+  }
+});
+
+
+
+app.get("/getfurnitures", async (request, response) => {
+  try {
+    const furnituresValue = await Furniture.find({});
+    response.status(200).json(furnituresValue);
+  } catch (error) {
+    response.status(500).json({ message: 'Error retrieving furniture data', error });
+  }
+});
+
+
 
 const PORT = 3000;
 app.listen(PORT, () => {
