@@ -4,8 +4,7 @@
    "description": "LoginServerAndRegsiter",
    "main": "app.js",
    "scripts": {
-      "start": "node app.js",
-      "postinstall": "npm install"
+      "start": "node app.js"
    },
    "dependencies": {
       "cloudinary": "^2.5.1",
