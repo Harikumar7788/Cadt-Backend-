@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const cors = require("cors");
 const multer = require('multer');
 const cloudinary = require('./cloudinary');
+const authenticateToken = require('./Authication');
+
 
 
 
@@ -23,31 +25,18 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// user Authentication 
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader) return res.status(403).json({ error: "Access denied" });
-
-
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
-
-  jwt.verify(token, process.env.ACCESS_TOKEN, (err, user) => {
-    if (err) return res.status(403).json({ error: "Invalid token" });
-    req.user = user;
-    console.log("Decoded user:", req.user); 
-    next();
-  });
-}
 
 
 
 // User Schema
 const userSchema = new mongoose.Schema({
   username: String,
-  password: String
+  password: String,
+  role: String
 });
 const Admins = mongoose.model('Clients', userSchema);
+
 
 // Furniture Schema
 const furnitureSchema = new mongoose.Schema({
@@ -123,28 +112,38 @@ app.post("/login", async (req, res) => {
 
 // Register API
 app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, role } = req.body;
+  
   try {
+
     const dbResponse = await Admins.findOne({ username });
     if (dbResponse) {
       return res.status(400).json({ error: "User Already Registered" });
     }
+
+
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be greater than six characters" });
     }
-    const user = { name: username };
+
+ 
+    const user = { name: username, role };
     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN);
-    const newUser = new Admins({ username, password });
+
+
+    const newUser = new Admins({ username, password, role });
     await newUser.save();
+
     return res.status(200).json({ accessToken });
   } catch (error) {
     console.error("Register Error:", error);
-    res.status(500).send("Server Error!");
+    return res.status(500).send("Server Error!");
   }
 });
 
-// Get Users
-app.get("/users", async (req, res) => {
+
+// Get Users By Admin
+app.get("/clients", async (req, res) => {
   try {
     const users = await Admins.find({});
     res.send(users);
@@ -154,7 +153,45 @@ app.get("/users", async (req, res) => {
   }
 });
 
-// Post Furniture
+// Delete User By Admin
+app.delete("/clients/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deletedUser = await Admins.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).send("User not found!");
+    }
+    res.send("User deleted successfully!");
+  } catch (error) {
+    console.error("Delete User Error:", error);
+    res.status(500).send("Server Error!");
+  }
+});
+
+// Update User By Admin
+app.put("/modifyclients/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, password} = req.body; 
+  try {
+    const updatedUser = await Admins.findByIdAndUpdate(
+      id,
+      { name, password },
+      { new: true, runValidators: true }
+    );
+    if (!updatedUser) {
+      return res.status(404).send("User not found!");
+    }
+    res.send(updatedUser);
+  } catch (error) {
+    console.error("Update User Error:", error);
+    res.status(500).send("Server Error!");
+  }
+});
+
+
+
+
+// post of models 
 app.post('/furnitures', authenticateToken, upload.fields([
   { name: 'furnitureGltfLoaderFiles' }, 
   { name: 'furnitureImageFiles' }
@@ -233,9 +270,62 @@ app.post('/furnitures', authenticateToken, upload.fields([
 
 
 
+/// get Common Projects 
+app.get('/commonprojects', async (req, res) => {
+  try {
+    
+    const commonCollectionName = `furniture_data`;
+    
+    
+    const FurnitureData = mongoose.models[commonCollectionName] || mongoose.model(commonCollectionName, new mongoose.Schema({
+      userId: String,
+      userCollectionId: mongoose.Schema.Types.ObjectId
+    }));
+
+    
+    const references = await FurnitureData.find({});
 
 
-// Get Furniture
+    const furnitureDataWithNames = await Promise.all(
+      references.map(async (ref) => {
+        const userCollectionName = `user_${ref.userId}_data`;
+        const UserCollection = mongoose.models[userCollectionName] || mongoose.model(userCollectionName, userFurnitureSchema);
+
+        
+        const userFurnitureData = await UserCollection.findById(ref.userCollectionId);
+
+    
+        if (userFurnitureData) {
+          return {
+            userId: ref.userId,
+            furnitureName: userFurnitureData.furnitureName, 
+            modelType: userFurnitureData.modelType,
+            category: userFurnitureData.category,
+            imagesAndModels: userFurnitureData.FurnituresImagesArraywithGltf, 
+          };
+        }
+        return null; 
+      })
+    );
+
+    
+    const filteredFurnitureData = furnitureDataWithNames.filter(item => item !== null);
+
+    res.status(200).json({ message: 'Furniture data retrieved successfully', data: filteredFurnitureData });
+  } catch (error) {
+    console.error("Error retrieving furniture data:", error);
+    res.status(500).json({ message: 'Error retrieving furniture data', error });
+  }
+});
+
+
+
+
+
+
+
+
+// Get Common  Furniture
 app.get("/getfurnitures", async (req, res) => {
   try {
     const furnitures = await Furniture.find({});
@@ -257,6 +347,9 @@ const userFurnitureSchema = new mongoose.Schema({
   ]
 });
 
+
+
+/// get User Specific furniture 
 
 app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
   try {
@@ -285,6 +378,57 @@ app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
   }
 });
 
+
+const sceneValueSchema = new mongoose.Schema({
+  coordinates: [
+    {
+      x: Number,
+      y: Number,
+      z: Number
+    }
+  ]
+});
+
+const SceneValue = mongoose.model('SceneValue', sceneValueSchema);
+
+
+/// Api For Insert Value 
+
+
+
+app.post('/defaultscene', async (req, res) => {
+  try {
+    const data = req.body.data;
+    if (!Array.isArray(data)) {
+      return res.status(400).json({ message: 'Data should be an array of objects' });
+    }
+
+    const formattedData = [
+      {
+        coordinates: data
+      }
+    ];
+
+    await SceneValue.insertMany(formattedData);
+    res.status(200).json({ message: 'Data stored successfully in sceneValue collection' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error storing data' });
+  }
+});
+
+
+
+app.get('/api/getData', async (req, res) => {
+  try {
+   
+    const data = await SceneValue.find();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error retrieving data' });
+  }
+});
 
 
 
