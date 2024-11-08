@@ -59,27 +59,22 @@ const Furniture = mongoose.model('Furniture', furnitureSchema);
 // Login API
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-  console.log(username);
-  console.log(password);
 
   try {
-
     const dbResponse = await Admins.findOne({ username });
     if (!dbResponse) {
       return res.status(400).json({ error: "Invalid user" });
     }
 
-
     if (password !== dbResponse.password) {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    const user = { name: username, auth: "user", tokenmode: "notadmin" };
+    // Include both username and role in the token
+    const user = { name: username, role: dbResponse.role };
     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN);
 
-
     const userCollectionName = `user_${username}_data`;
-
 
     const userDataSchema = new mongoose.Schema({
       modelType: String,
@@ -93,9 +88,7 @@ app.post("/login", async (req, res) => {
       ]
     });
 
- 
     const UserCollection = mongoose.models[userCollectionName] || mongoose.model(userCollectionName, userDataSchema);
-
 
     if (!mongoose.connection.collections[userCollectionName]) {
       await UserCollection.createCollection();
@@ -108,6 +101,7 @@ app.post("/login", async (req, res) => {
     res.status(500).send("Server Error!");
   }
 });
+
 
 
 // Register API
@@ -129,7 +123,7 @@ app.post("/register", async (req, res) => {
  
     const user = { name: username, role };
     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN);
-
+    console.log(accessToken)
 
     const newUser = new Admins({ username, password, role });
     await newUser.save();
