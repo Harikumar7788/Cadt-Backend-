@@ -379,8 +379,15 @@ app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
 });
 
 
+
+
+/// Api For Insert Value 
+
+
+
 const sceneValueSchema = new mongoose.Schema({
-  coordinates: [
+  name: String,
+  cordinates: [ 
     {
       x: Number,
       y: Number,
@@ -391,11 +398,7 @@ const sceneValueSchema = new mongoose.Schema({
 
 const SceneValue = mongoose.model('SceneValue', sceneValueSchema);
 
-
-/// Api For Insert Value 
-
-
-
+/// API to Insert Value
 app.post('/defaultscene', async (req, res) => {
   try {
     const data = req.body.data;
@@ -405,7 +408,8 @@ app.post('/defaultscene', async (req, res) => {
 
     const formattedData = [
       {
-        coordinates: data
+        name: "Lcut",  
+        cordinates: data 
       }
     ];
 
@@ -417,9 +421,21 @@ app.post('/defaultscene', async (req, res) => {
   }
 });
 
-
-
+/// API to Retrieve Data
 app.get('/api/getData', async (req, res) => {
+  try {
+    const data = await SceneValue.find();
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error retrieving data' });
+  }
+});
+
+
+
+
+app.get('/defaultscenevalues', async (req, res) => {
   try {
    
     const data = await SceneValue.find();
