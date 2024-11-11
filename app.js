@@ -430,10 +430,10 @@ app.post('/dynamicscene', async (req, res) => {
     let document = await MainArrayModel.findOne();
 
     if (!document) {
-      // If no document exists, create one with the new item in the mainArray
+     
       document = new MainArrayModel({ mainArray: [newItem] });
     } else {
-      // Otherwise, push new item to existing mainArray
+
       document.mainArray.push(newItem);
     }
 
@@ -450,20 +450,18 @@ app.put('/dynamicscene', async (req, res) => {
   try {
     const { gltfLink, newCoordinates, newGltfLink, newGltfScene } = req.body;
 
-    // Find the document
     const document = await MainArrayModel.findOne();
 
     if (document) {
-      // Find the item to update within mainArray based on the gltfLink
+
       const item = document.mainArray.find(item => item.gltfLink === gltfLink);
 
       if (item) {
-        // Update the fields with new data
+
         item.coordinates = newCoordinates || item.coordinates;
         item.gltfLink = newGltfLink || item.gltfLink;
         item.gltfScene = newGltfScene || item.gltfScene;
 
-        // Save the updated document
         await document.save();
         res.status(200).json({ message: 'Item updated successfully', document });
       } else {
@@ -493,14 +491,13 @@ app.get('/getdynamicscene', async (req, res) => {
 
 
 
-// Endpoint to delete an item from mainArray based on gltfLink
 app.delete('/dynamicscene', async (req, res) => {
   try {
     const { gltfLink } = req.body;
     const document = await MainArrayModel.findOne();
 
     if (document) {
-      // Filter out the item with the specified gltfLink
+
       document.mainArray = document.mainArray.filter(item => item.gltfLink !== gltfLink);
       await document.save();
       res.status(200).json({ message: 'Item deleted successfully', document });
