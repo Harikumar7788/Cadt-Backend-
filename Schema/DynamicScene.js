@@ -1,22 +1,31 @@
 const mongoose = require('mongoose');
 
-// Define schema for individual coordinates within mainArray
+
 const CoordinateSchema = new mongoose.Schema({
   x: { type: Number, required: true },
   y: { type: Number, required: true },
   z: { type: Number, required: true }
 }, { _id: false });
 
-// Define schema for mainArray item
-const MainArrayItemSchema = new mongoose.Schema({
-  coordinates: [CoordinateSchema], // Array of coordinates
-  gltfLink: { type: String, required: true }, // URL for GLTF file
-  gltfScene: CoordinateSchema // Position of GLTF scene as x, y, z
+const GltfObjectSchema = new mongoose.Schema({
+  gltfLink: { type: String, required: true },
+  gltfScene: {
+    x: { type: Number, required: true },
+    y: { type: Number, required: true },
+    z: { type: Number, required: true }
+  }
 }, { _id: false });
 
-// Define schema for the full main array document
+
 const MainArraySchema = new mongoose.Schema({
-  mainArray: [MainArrayItemSchema] // List of items with coordinates, gltfLink, and gltfScene
+  coordinates: {
+    type: [[CoordinateSchema]],
+    required: true
+  },
+  gltfObjects: {
+    type: [GltfObjectSchema], 
+    required: true
+  }
 }, { timestamps: true });
 
 const MainArrayModel = mongoose.model('MainArray', MainArraySchema);

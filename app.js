@@ -416,66 +416,87 @@ app.post('/defaultscene', async (req, res) => {
 });
 
 
-
+// api to store dynamic scence values 
 app.post('/dynamicscene', async (req, res) => {
   try {
-    const { coordinates, gltfLink, gltfScene } = req.body;
+    const { coordinates, gltfObjects } = req.body;
+    const newDocument = new MainArrayModel({ coordinates, gltfObjects });
+    const savedDocument = await newDocument.save();
 
-    const newItem = {
-      coordinates,
-      gltfLink,
-      gltfScene
-    };
-
-    let document = await MainArrayModel.findOne();
-
-    if (!document) {
-      // If no document exists, create one with the new item in the mainArray
-      document = new MainArrayModel({ mainArray: [newItem] });
-    } else {
-      // Otherwise, push new item to existing mainArray
-      document.mainArray.push(newItem);
-    }
-
-    await document.save();
-    res.status(201).json(document);
+    res.status(201).json({
+      message: 'Data successfully added',
+      data: savedDocument
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add data', message: error.message });
+    res.status(500).json({
+      message: 'Error adding data',
+      error: error.message
+    });
   }
 });
 
 
 // Endpoint to update an existing item in mainArray
-app.put('/dynamicscene', async (req, res) => {
+app.put('/dynamicscene/edit', async (req, res) => {
   try {
-    const { gltfLink, newCoordinates, newGltfLink, newGltfScene } = req.body;
+    const { gltfLink, updatedCoordinates, updatedGltfLink, updatedGltfScene } = req.body;
 
-    // Find the document
     const document = await MainArrayModel.findOne();
 
     if (document) {
-      // Find the item to update within mainArray based on the gltfLink
-      const item = document.mainArray.find(item => item.gltfLink === gltfLink);
-
-      if (item) {
-        // Update the fields with new data
-        item.coordinates = newCoordinates || item.coordinates;
-        item.gltfLink = newGltfLink || item.gltfLink;
-        item.gltfScene = newGltfScene || item.gltfScene;
-
-        // Save the updated document
-        await document.save();
-        res.status(200).json({ message: 'Item updated successfully', document });
-      } else {
-        res.status(404).json({ error: 'Item with specified gltfLink not found' });
+      if (updatedCoordinates) {
+        document.coordinates = updatedCoordinates; 
       }
+
+      const gltfObject = document.gltfObjects.find(obj => obj.gltfLink === gltfLink);
+      if (gltfObject) {
+        gltfObject.gltfLink = updatedGltfLink || gltfObject.gltfLink;
+        gltfObject.gltfScene = updatedGltfScene || gltfObject.gltfScene;
+      }
+
+      const savedDocument = await document.save();
+      res.status(200).json({
+        message: 'Data successfully updated',
+        data: savedDocument
+      });
     } else {
       res.status(404).json({ error: 'Document not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update item', message: error.message });
+    res.status(500).json({
+      message: 'Error updating data',
+      error: error.message
+    });
   }
 });
+
+// delete the dynamicScene Data 
+app.delete('/dynamicscene/:id', async (req, res) => {
+  try {
+    const { id } = req.params; 
+
+ 
+    const document = await MainArrayModel.findOne();
+
+    if (document) {
+    
+      document.gltfObjects = document.gltfObjects.filter(item => item._id.toString() !== id);
+
+  
+      await document.save();
+
+      res.status(200).json({ message: 'Item deleted successfully', document });
+    } else {
+      res.status(404).json({ error: 'Document not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete item', message: error.message });
+  }
+});
+
+
+
+
 
 
 
@@ -493,24 +514,7 @@ app.get('/getdynamicscene', async (req, res) => {
 
 
 
-// Endpoint to delete an item from mainArray based on gltfLink
-app.delete('/dynamicscene', async (req, res) => {
-  try {
-    const { gltfLink } = req.body;
-    const document = await MainArrayModel.findOne();
 
-    if (document) {
-      // Filter out the item with the specified gltfLink
-      document.mainArray = document.mainArray.filter(item => item.gltfLink !== gltfLink);
-      await document.save();
-      res.status(200).json({ message: 'Item deleted successfully', document });
-    } else {
-      res.status(404).json({ error: 'Document not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete item', message: error.message });
-  }
-});
 
 
 
