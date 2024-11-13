@@ -265,7 +265,7 @@ app.post('/furnitures', authenticateToken, upload.fields([
 
 
 /// get Common Projects 
-app.get('/commonprojects', async (req, res) => {
+app.get('/commonprojects',  authenticateToken,async (req, res) => {
   try {
     
     const commonCollectionName = `furniture_data`;
@@ -320,7 +320,7 @@ app.get('/commonprojects', async (req, res) => {
 
 
 // Get Common  Furniture
-app.get("/getfurnitures", async (req, res) => {
+app.get("/getfurnitures",  authenticateToken,async (req, res) => {
   try {
     const furnitures = await Furniture.find({});
     res.status(200).json(furnitures);
@@ -393,7 +393,7 @@ const sceneValueSchema = new mongoose.Schema({
 const SceneValue = mongoose.model('SceneValue', sceneValueSchema);
 
 /// API to Insert Value
-app.post('/defaultscene', async (req, res) => {
+app.post('/defaultscene',  authenticateToken,async (req, res) => {
   try {
     const data = req.body.data;
     if (!Array.isArray(data)) {
@@ -417,10 +417,10 @@ app.post('/defaultscene', async (req, res) => {
 
 
 // api to store dynamic scence values 
-app.post('/dynamicscene', async (req, res) => {
+app.post('/dynamicscene',  authenticateToken,async (req, res) => {
   try {
-    const { coordinates, gltfObjects } = req.body;
-    const newDocument = new MainArrayModel({ coordinates, gltfObjects });
+    const { projectName, coordinates, gltfObjects } = req.body; 
+    const newDocument = new MainArrayModel({ projectName, coordinates, gltfObjects });
     const savedDocument = await newDocument.save();
 
     res.status(201).json({
@@ -436,8 +436,9 @@ app.post('/dynamicscene', async (req, res) => {
 });
 
 
+
 // Endpoint to update an existing item in mainArray
-app.put('/dynamicscene/edit', async (req, res) => {
+app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
   try {
     const { gltfLink, updatedCoordinates, updatedGltfLink, updatedGltfScene } = req.body;
 
@@ -471,7 +472,7 @@ app.put('/dynamicscene/edit', async (req, res) => {
 });
 
 // delete the dynamicScene Data 
-app.delete('/dynamicscene/:id', async (req, res) => {
+app.delete('/dynamicscene/:id',  authenticateToken ,async (req, res) => {
   try {
     const { id } = req.params; 
 
@@ -503,9 +504,9 @@ app.delete('/dynamicscene/:id', async (req, res) => {
 
 
 // Endpoint to retrieve all items
-app.get('/getdynamicscene', async (req, res) => {
+app.get('/getdynamicscene', authenticateToken ,async (req, res) => {
   try {
-    const document = await MainArrayModel.findOne();
+    const document = await MainArrayModel.find();
     res.status(200).json(document);
   } catch (error) {
     res.status(500).json({ error: 'Failed to retrieve data', message: error.message });
@@ -528,7 +529,7 @@ app.get('/getdynamicscene', async (req, res) => {
 
 
 
-app.get('/defaultscenevalues', async (req, res) => {
+app.get('/defaultscenevalues',authenticateToken  ,async (req, res) => {
   try {
    
     const data = await SceneValue.find();
@@ -547,7 +548,7 @@ app.get('/defaultscenevalues', async (req, res) => {
 
 
 // Start Server
-const PORT = 3000;
+const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
