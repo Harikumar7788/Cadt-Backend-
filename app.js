@@ -8,6 +8,8 @@ const cloudinary = require('./cloudinary');
 const authenticateToken = require('./Authication');
 const MainArrayModel = require('./Schema/DynamicScene')
 
+const Texture = require("./Schema/texture")
+
 
 
 
@@ -56,7 +58,7 @@ const Furniture = mongoose.model('Furniture', furnitureSchema);
 
 
 
-// Login API
+// Login API //  1
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -104,7 +106,7 @@ app.post("/login", async (req, res) => {
 
 
 
-// Register API
+// Register API //  2
 app.post("/register", async (req, res) => {
   const { username, password, role } = req.body;
   
@@ -136,7 +138,7 @@ app.post("/register", async (req, res) => {
 });
 
 
-// Get Users By Admin
+// Get Users By Admin // 3 
 app.get("/clients", async (req, res) => {
   try {
     const users = await Admins.find({});
@@ -147,7 +149,7 @@ app.get("/clients", async (req, res) => {
   }
 });
 
-// Delete User By Admin
+// Delete User By Admin  // 4
 app.delete("/clients/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -162,7 +164,7 @@ app.delete("/clients/:id", async (req, res) => {
   }
 });
 
-// Update User By Admin
+// Update User By Admin // 5
 app.put("/modifyclients/:id", async (req, res) => {
   const { id } = req.params;
   const { name, password} = req.body; 
@@ -185,7 +187,7 @@ app.put("/modifyclients/:id", async (req, res) => {
 
 
 
-// post of models 
+// post of models // 6
 app.post('/furnitures', authenticateToken, upload.fields([
   { name: 'furnitureGltfLoaderFiles' }, 
   { name: 'furnitureImageFiles' }
@@ -264,7 +266,7 @@ app.post('/furnitures', authenticateToken, upload.fields([
 
 
 
-/// get Common Projects 
+/// get Common Projects // 7
 app.get('/commonprojects',  authenticateToken,async (req, res) => {
   try {
     
@@ -319,7 +321,7 @@ app.get('/commonprojects',  authenticateToken,async (req, res) => {
 
 
 
-// Get Common  Furniture
+// Get Common  Furniture // 8
 app.get("/getfurnitures",  authenticateToken,async (req, res) => {
   try {
     const furnitures = await Furniture.find({});
@@ -329,6 +331,9 @@ app.get("/getfurnitures",  authenticateToken,async (req, res) => {
     res.status(500).json({ message: 'Error retrieving furniture data', error });
   }
 });
+
+
+
 const userFurnitureSchema = new mongoose.Schema({
   modelType: String,
   category: String,
@@ -343,7 +348,7 @@ const userFurnitureSchema = new mongoose.Schema({
 
 
 
-/// get User Specific furniture 
+/// get User Specific furniture  // 9
 
 app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
   try {
@@ -375,8 +380,6 @@ app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
 
 
 
-/// Api For Insert Value 
-
 
 
 const sceneValueSchema = new mongoose.Schema({
@@ -392,7 +395,7 @@ const sceneValueSchema = new mongoose.Schema({
 
 const SceneValue = mongoose.model('SceneValue', sceneValueSchema);
 
-/// API to Insert Value
+/// API to Insert Default Values // 10
 app.post('/defaultscene',  authenticateToken,async (req, res) => {
   try {
     const data = req.body.data;
@@ -415,8 +418,7 @@ app.post('/defaultscene',  authenticateToken,async (req, res) => {
   }
 });
 
-
-// api to store dynamic scence values 
+// api to store dynamic scence values // 11
 app.post('/dynamicscene',  authenticateToken,async (req, res) => {
   try {
     const { projectName, coordinates, gltfObjects } = req.body; 
@@ -435,9 +437,7 @@ app.post('/dynamicscene',  authenticateToken,async (req, res) => {
   }
 });
 
-
-
-// Endpoint to update an existing item in mainArray
+// Upadate the dynamuc Scenve Values // 12
 app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
   try {
     const { gltfLink, updatedCoordinates, updatedGltfLink, updatedGltfScene } = req.body;
@@ -471,7 +471,7 @@ app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
   }
 });
 
-// delete the dynamicScene Data 
+// delete the dynamicScene Data  // 13
 app.delete('/dynamicscene/:id',  authenticateToken ,async (req, res) => {
   try {
     const { id } = req.params; 
@@ -495,16 +495,8 @@ app.delete('/dynamicscene/:id',  authenticateToken ,async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
-
-// Endpoint to retrieve all items
-app.get('/getdynamicscene', authenticateToken ,async (req, res) => {
+// Endpoint to retrieve all items // 14
+app.get('/getdynamicscene',async (req, res) => {
   try {
     const document = await MainArrayModel.find();
     res.status(200).json(document);
@@ -514,21 +506,7 @@ app.get('/getdynamicscene', authenticateToken ,async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/// Get Default scenes // 15
 app.get('/defaultscenevalues',authenticateToken  ,async (req, res) => {
   try {
    
@@ -540,11 +518,79 @@ app.get('/defaultscenevalues',authenticateToken  ,async (req, res) => {
   }
 });
 
+/// Add Textures  // 16
+app.post(
+  "/textures",
+  upload.fields([{ name: "Texturesfiles" }]),
+  async (req, res) => {
+    try {
+      if (!req.files || !req.files.Texturesfiles || req.files.Texturesfiles.length === 0) {
+        return res.status(400).send("No files selected");
+      }
+
+      const { name, type } = req.body;
+      if (!name || !type) {
+        return res.status(400).send("Invalid Data Format");
+      }
+
+  
+      const uploadToCloudinary = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "textures" },
+            (error, result) => {
+              if (error) {
+                reject(new Error("Cloudinary upload failed"));
+              } else {
+                resolve(result);
+              }
+            }
+          );
+          uploadStream.end(fileBuffer);
+        });
+      };
+
+  
+      const uploadedTextures = await Promise.all(
+        req.files.Texturesfiles.map(async (file) => {
+          const result = await uploadToCloudinary(file.buffer);
+          return {
+            url: result.secure_url,
+          };
+        })
+      );
 
 
+      const textureData = new Texture({
+        name,
+        type,
+        textures: uploadedTextures,
+      });
+
+      await textureData.save();
+
+      res.status(200).json({
+        message: "Textures uploaded and saved successfully",
+        data: textureData,
+      });
+    } catch (e) {
+      console.error("Error uploading texture:", e);
+      res.status(500).send("Server Error");
+    }
+  }
+);
 
 
-
+// get Textures // 17
+app.get("/getTextures", async(req,res)=>{
+  try{
+    const textures = await Texture.find();
+    res.status(200).send(textures)
+  }
+  catch(e){
+    res.status(500).send("server Error!!!!...")
+  }
+})
 
 
 // Start Server
