@@ -8,6 +8,8 @@ const cloudinary = require('./cloudinary');
 const authenticateToken = require('./Authication');
 const MainArrayModel = require('./Schema/DynamicScene')
 
+const Texture = require("./Schema/texture")
+
 
 
 
@@ -56,7 +58,7 @@ const Furniture = mongoose.model('Furniture', furnitureSchema);
 
 
 
-// Login API
+// Login API //  1
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -104,7 +106,7 @@ app.post("/login", async (req, res) => {
 
 
 
-// Register API
+// Register API //  2
 app.post("/register", async (req, res) => {
   const { username, password, role } = req.body;
   
@@ -136,7 +138,7 @@ app.post("/register", async (req, res) => {
 });
 
 
-// Get Users By Admin
+// Get Users By Admin // 3 
 app.get("/clients", async (req, res) => {
   try {
     const users = await Admins.find({});
@@ -147,7 +149,7 @@ app.get("/clients", async (req, res) => {
   }
 });
 
-// Delete User By Admin
+// Delete User By Admin  // 4
 app.delete("/clients/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -162,7 +164,7 @@ app.delete("/clients/:id", async (req, res) => {
   }
 });
 
-// Update User By Admin
+// Update User By Admin // 5
 app.put("/modifyclients/:id", async (req, res) => {
   const { id } = req.params;
   const { name, password} = req.body; 
@@ -185,7 +187,7 @@ app.put("/modifyclients/:id", async (req, res) => {
 
 
 
-// post of models 
+// post of models // 6
 app.post('/furnitures', authenticateToken, upload.fields([
   { name: 'furnitureGltfLoaderFiles' }, 
   { name: 'furnitureImageFiles' }
@@ -264,8 +266,8 @@ app.post('/furnitures', authenticateToken, upload.fields([
 
 
 
-/// get Common Projects 
-app.get('/commonprojects', async (req, res) => {
+/// get Common Projects // 7
+app.get('/commonprojects',  authenticateToken,async (req, res) => {
   try {
     
     const commonCollectionName = `furniture_data`;
@@ -319,8 +321,8 @@ app.get('/commonprojects', async (req, res) => {
 
 
 
-// Get Common  Furniture
-app.get("/getfurnitures", async (req, res) => {
+// Get Common  Furniture // 8
+app.get("/getfurnitures",  authenticateToken,async (req, res) => {
   try {
     const furnitures = await Furniture.find({});
     res.status(200).json(furnitures);
@@ -329,6 +331,9 @@ app.get("/getfurnitures", async (req, res) => {
     res.status(500).json({ message: 'Error retrieving furniture data', error });
   }
 });
+
+
+
 const userFurnitureSchema = new mongoose.Schema({
   modelType: String,
   category: String,
@@ -343,7 +348,7 @@ const userFurnitureSchema = new mongoose.Schema({
 
 
 
-/// get User Specific furniture 
+/// get User Specific furniture  // 9
 
 app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
   try {
@@ -375,8 +380,6 @@ app.get('/userSpecificfurnitures', authenticateToken, async (req, res) => {
 
 
 
-/// Api For Insert Value 
-
 
 
 const sceneValueSchema = new mongoose.Schema({
@@ -392,8 +395,8 @@ const sceneValueSchema = new mongoose.Schema({
 
 const SceneValue = mongoose.model('SceneValue', sceneValueSchema);
 
-/// API to Insert Value
-app.post('/defaultscene', async (req, res) => {
+/// API to Insert Default Values // 10
+app.post('/defaultscene',  authenticateToken,async (req, res) => {
   try {
     const data = req.body.data;
     if (!Array.isArray(data)) {
@@ -415,91 +418,74 @@ app.post('/defaultscene', async (req, res) => {
   }
 });
 
-
-
-app.post('/dynamicscene', async (req, res) => {
+// api to store dynamic scence values // 11
+app.post('/dynamicscene',  authenticateToken,async (req, res) => {
   try {
-    const { coordinates, gltfLink, gltfScene } = req.body;
+    const { projectName, coordinates, gltfObjects } = req.body; 
+    const newDocument = new MainArrayModel({ projectName, coordinates, gltfObjects });
+    const savedDocument = await newDocument.save();
 
-    const newItem = {
-      coordinates,
-      gltfLink,
-      gltfScene
-    };
+    res.status(201).json({
+      message: 'Data successfully added',
+      data: savedDocument
+    });
 
-    let document = await MainArrayModel.findOne();
-
-    if (!document) {
-     
-      document = new MainArrayModel({ mainArray: [newItem] });
-    } else {
-
-      document.mainArray.push(newItem);
-    }
-
-    await document.save();
-    res.status(201).json(document);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add data', message: error.message });
+    res.status(500).json({
+      message: 'Error adding data',
+      error: error.message
+    });
   }
 });
 
-
-// Endpoint to update an existing item in mainArray
-app.put('/dynamicscene', async (req, res) => {
+// Upadate the dynamuc Scenve Values // 12
+app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
   try {
-    const { gltfLink, newCoordinates, newGltfLink, newGltfScene } = req.body;
+    const { gltfLink, updatedCoordinates, updatedGltfLink, updatedGltfScene } = req.body;
 
     const document = await MainArrayModel.findOne();
 
     if (document) {
 
-      const item = document.mainArray.find(item => item.gltfLink === gltfLink);
-
-      if (item) {
-
-        item.coordinates = newCoordinates || item.coordinates;
-        item.gltfLink = newGltfLink || item.gltfLink;
-        item.gltfScene = newGltfScene || item.gltfScene;
-
-        await document.save();
-        res.status(200).json({ message: 'Item updated successfully', document });
-      } else {
-        res.status(404).json({ error: 'Item with specified gltfLink not found' });
+      if (updatedCoordinates) {
+        document.coordinates = updatedCoordinates; 
       }
+
+      const gltfObject = document.gltfObjects.find(obj => obj.gltfLink === gltfLink);
+      if (gltfObject) {
+        gltfObject.gltfLink = updatedGltfLink || gltfObject.gltfLink;
+        gltfObject.gltfScene = updatedGltfScene || gltfObject.gltfScene;
+
+      }
+
+      const savedDocument = await document.save();
+      res.status(200).json({
+        message: 'Data successfully updated',
+        data: savedDocument
+      });
     } else {
       res.status(404).json({ error: 'Document not found' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update item', message: error.message });
+    res.status(500).json({
+      message: 'Error updating data',
+      error: error.message
+    });
   }
 });
 
-
-
-
-
-// Endpoint to retrieve all items
-app.get('/getdynamicscene', async (req, res) => {
+// delete the dynamicScene Data  // 13
+app.delete('/dynamicscene/:id',  authenticateToken ,async (req, res) => {
   try {
-    const document = await MainArrayModel.findOne();
-    res.status(200).json(document);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to retrieve data', message: error.message });
-  }
-});
-
-
-
-app.delete('/dynamicscene', async (req, res) => {
-  try {
-    const { gltfLink } = req.body;
+    const { id } = req.params; 
+ 
     const document = await MainArrayModel.findOne();
 
     if (document) {
-
-      document.mainArray = document.mainArray.filter(item => item.gltfLink !== gltfLink);
+    
+      document.gltfObjects = document.gltfObjects.filter(item => item._id.toString() !== id);
       await document.save();
+
       res.status(200).json({ message: 'Item deleted successfully', document });
     } else {
       res.status(404).json({ error: 'Document not found' });
@@ -509,19 +495,19 @@ app.delete('/dynamicscene', async (req, res) => {
   }
 });
 
+// Endpoint to retrieve all items // 14
+app.get('/getdynamicscene',async (req, res) => {
+  try {
+    const document = await MainArrayModel.find();
+    res.status(200).json(document);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve data', message: error.message });
+  }
+});
 
 
-
-
-
-
-
-
-
-
-
-
-app.get('/defaultscenevalues', async (req, res) => {
+/// Get Default scenes // 15
+app.get('/defaultscenevalues',authenticateToken  ,async (req, res) => {
   try {
    
     const data = await SceneValue.find();
@@ -532,15 +518,83 @@ app.get('/defaultscenevalues', async (req, res) => {
   }
 });
 
+/// Add Textures  // 16
+app.post(
+  "/textures",
+  upload.fields([{ name: "Texturesfiles" }]),
+  async (req, res) => {
+    try {
+      if (!req.files || !req.files.Texturesfiles || req.files.Texturesfiles.length === 0) {
+        return res.status(400).send("No files selected");
+      }
+
+      const { name, type } = req.body;
+      if (!name || !type) {
+        return res.status(400).send("Invalid Data Format");
+      }
+
+  
+      const uploadToCloudinary = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "textures" },
+            (error, result) => {
+              if (error) {
+                reject(new Error("Cloudinary upload failed"));
+              } else {
+                resolve(result);
+              }
+            }
+          );
+          uploadStream.end(fileBuffer);
+        });
+      };
+
+  
+      const uploadedTextures = await Promise.all(
+        req.files.Texturesfiles.map(async (file) => {
+          const result = await uploadToCloudinary(file.buffer);
+          return {
+            url: result.secure_url,
+          };
+        })
+      );
 
 
+      const textureData = new Texture({
+        name,
+        type,
+        textures: uploadedTextures,
+      });
+
+      await textureData.save();
+
+      res.status(200).json({
+        message: "Textures uploaded and saved successfully",
+        data: textureData,
+      });
+    } catch (e) {
+      console.error("Error uploading texture:", e);
+      res.status(500).send("Server Error");
+    }
+  }
+);
 
 
-
+// get Textures // 17
+app.get("/getTextures", async(req,res)=>{
+  try{
+    const textures = await Texture.find();
+    res.status(200).send(textures)
+  }
+  catch(e){
+    res.status(500).send("server Error!!!!...")
+  }
+})
 
 
 // Start Server
-const PORT = 3000;
+const PORT = 4000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
