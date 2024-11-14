@@ -429,6 +429,7 @@ app.post('/dynamicscene',  authenticateToken,async (req, res) => {
       message: 'Data successfully added',
       data: savedDocument
     });
+
   } catch (error) {
     res.status(500).json({
       message: 'Error adding data',
@@ -445,6 +446,7 @@ app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
     const document = await MainArrayModel.findOne();
 
     if (document) {
+
       if (updatedCoordinates) {
         document.coordinates = updatedCoordinates; 
       }
@@ -453,6 +455,7 @@ app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
       if (gltfObject) {
         gltfObject.gltfLink = updatedGltfLink || gltfObject.gltfLink;
         gltfObject.gltfScene = updatedGltfScene || gltfObject.gltfScene;
+
       }
 
       const savedDocument = await document.save();
@@ -475,15 +478,12 @@ app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
 app.delete('/dynamicscene/:id',  authenticateToken ,async (req, res) => {
   try {
     const { id } = req.params; 
-
  
     const document = await MainArrayModel.findOne();
 
     if (document) {
     
       document.gltfObjects = document.gltfObjects.filter(item => item._id.toString() !== id);
-
-  
       await document.save();
 
       res.status(200).json({ message: 'Item deleted successfully', document });
