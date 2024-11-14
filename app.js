@@ -322,7 +322,7 @@ app.get('/commonprojects',  authenticateToken,async (req, res) => {
 
 
 // Get Common  Furniture // 8
-app.get("/getfurnitures",  authenticateToken,async (req, res) => {
+app.get("/getfurnitures",async (req, res) => {
   try {
     const furnitures = await Furniture.find({});
     res.status(200).json(furnitures);
@@ -396,7 +396,7 @@ const sceneValueSchema = new mongoose.Schema({
 const SceneValue = mongoose.model('SceneValue', sceneValueSchema);
 
 /// API to Insert Default Values // 10
-app.post('/defaultscene',  authenticateToken,async (req, res) => {
+app.post('/defaultscene',async (req, res) => {
   try {
     const data = req.body.data;
     if (!Array.isArray(data)) {
@@ -419,7 +419,7 @@ app.post('/defaultscene',  authenticateToken,async (req, res) => {
 });
 
 // api to store dynamic scence values // 11
-app.post('/dynamicscene',  authenticateToken,async (req, res) => {
+app.post('/dynamicscene',async (req, res) => {
   try {
     const { projectName, coordinates, gltfObjects } = req.body; 
     const newDocument = new MainArrayModel({ projectName, coordinates, gltfObjects });
@@ -437,6 +437,9 @@ app.post('/dynamicscene',  authenticateToken,async (req, res) => {
     });
   }
 });
+
+
+
 
 // Upadate the dynamuc Scenve Values // 12
 app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
@@ -507,7 +510,7 @@ app.get('/getdynamicscene',async (req, res) => {
 
 
 /// Get Default scenes // 15
-app.get('/defaultscenevalues',authenticateToken  ,async (req, res) => {
+app.get('/defaultscenevalues' ,async (req, res) => {
   try {
    
     const data = await SceneValue.find();
