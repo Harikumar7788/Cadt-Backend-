@@ -11,7 +11,7 @@ const MainArrayModel = require('./Schema/DynamicScene')
 const Texture = require("./Schema/texture")
 
 
-
+const GLBModel = require('./Schema/glb');
 
 const app = express();
 app.use(cors());
@@ -418,21 +418,79 @@ app.post('/defaultscene',async (req, res) => {
   }
 });
 
-// api to store dynamic scence values // 11
-app.post('/dynamicscene',async (req, res) => {
+
+
+// Post data for both userSpecific and Globally 
+const getUserSpecificModel = (collectionName) => {
+  return mongoose.models[collectionName] || 
+    mongoose.model(collectionName, new mongoose.Schema({
+      projectName: String,
+      coordinates: Array,
+      gltfObjects: Array,
+      createdAt: { type: Date, default: Date.now },
+    }));
+};
+
+app.post('/dynamicscene', async (req, res) => {
   try {
-    const { projectName, coordinates, gltfObjects } = req.body; 
+    const { projectName, coordinates, gltfObjects, username } = req.body;
+
+   
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+ 
     const newDocument = new MainArrayModel({ projectName, coordinates, gltfObjects });
     const savedDocument = await newDocument.save();
 
+   
+    const userSpecificModel = getUserSpecificModel(`user_${username}_datas`);
+    const userSpecificDocument = new userSpecificModel({ projectName, coordinates, gltfObjects });
+
+
+    await userSpecificDocument.save();
+
     res.status(201).json({
-      message: 'Data successfully added',
-      data: savedDocument
+      message: 'Data successfully added to both global and user-specific collections',
+      globalData: savedDocument,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       message: 'Error adding data',
-      error: error.message
+      error: error.message,
+    });
+  }
+});
+
+
+// get data for based on userspecific 
+app.get('/dynamicscene/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+
+
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    const userSpecificModel = getUserSpecificModel(`user_${username}_datas`);
+    const userSpecificData = await userSpecificModel.find();
+
+    if (!userSpecificData.length) {
+      return res.status(404).json({ message: 'No data found for the user' });
+    }
+
+    res.status(200).json({
+      message: `Data retrieved successfully for user: ${username}`,
+      data: userSpecificData,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Error retrieving data',
+      error: error.message,
     });
   }
 });
@@ -440,65 +498,105 @@ app.post('/dynamicscene',async (req, res) => {
 
 
 
-// Upadate the dynamuc Scenve Values // 12
-app.put('/dynamicscene/edit', authenticateToken ,async (req, res) => {
+// Upadate the user-specific collection and  global MainArrayModel in  dynamic Scenve Values // 12
+app.put('/dynamicscene/edit', async (req, res) => {
   try {
-    const { gltfLink, updatedCoordinates, updatedGltfLink, updatedGltfScene } = req.body;
+    const { username, gltfLink, updatedCoordinates, updatedGltfLink, updatedGltfScene } = req.body;
 
-    const document = await MainArrayModel.findOne();
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
 
-    if (document) {
+
+    const globalDocument = await MainArrayModel.findOne();
+    if (globalDocument) {
       if (updatedCoordinates) {
-        document.coordinates = updatedCoordinates; 
+        globalDocument.coordinates = updatedCoordinates;
       }
 
-      const gltfObject = document.gltfObjects.find(obj => obj.gltfLink === gltfLink);
+      const gltfObject = globalDocument.gltfObjects.find(obj => obj.gltfLink === gltfLink);
       if (gltfObject) {
         gltfObject.gltfLink = updatedGltfLink || gltfObject.gltfLink;
         gltfObject.gltfScene = updatedGltfScene || gltfObject.gltfScene;
       }
 
-      const savedDocument = await document.save();
-      res.status(200).json({
-        message: 'Data successfully updated',
-        data: savedDocument
-      });
+      await globalDocument.save();
     } else {
-      res.status(404).json({ error: 'Document not found' });
+      return res.status(404).json({ message: 'Global document not found' });
     }
+
+ 
+    const userSpecificModel = getUserSpecificModel(`user_${username}`);
+    const userDocument = await userSpecificModel.findOne();
+    if (userDocument) {
+      if (updatedCoordinates) {
+        userDocument.coordinates = updatedCoordinates;
+      }
+
+      const userGltfObject = userDocument.gltfObjects.find(obj => obj.gltfLink === gltfLink);
+      if (userGltfObject) {
+        userGltfObject.gltfLink = updatedGltfLink || userGltfObject.gltfLink;
+        userGltfObject.gltfScene = updatedGltfScene || userGltfObject.gltfScene;
+      }
+
+      await userDocument.save();
+    } else {
+      return res.status(404).json({ message: `User document not found for username: ${username}` });
+    }
+
+    res.status(200).json({
+      message: 'Data successfully updated in both global and user-specific collections',
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       message: 'Error updating data',
-      error: error.message
+      error: error.message,
     });
   }
 });
 
+
 // delete the dynamicScene Data  // 13
-app.delete('/dynamicscene/:id',  authenticateToken ,async (req, res) => {
+app.delete('/dynamicscene', async (req, res) => {
   try {
-    const { id } = req.params; 
+    const { username, id } = req.body;
 
- 
-    const document = await MainArrayModel.findOne();
-
-    if (document) {
-    
-      document.gltfObjects = document.gltfObjects.filter(item => item._id.toString() !== id);
-
-  
-      await document.save();
-
-      res.status(200).json({ message: 'Item deleted successfully', document });
-    } else {
-      res.status(404).json({ error: 'Document not found' });
+    if (!id || !username) {
+      return res.status(400).json({ message: 'ID and username are required' });
     }
+
+    const globalDocument = await MainArrayModel.findOne();
+    if (globalDocument) {
+      globalDocument.gltfObjects = globalDocument.gltfObjects.filter(item => item._id.toString() !== id);
+      await globalDocument.save();
+    } else {
+      return res.status(404).json({ message: 'Global document not found' });
+    }
+
+    const userSpecificModel = getUserSpecificModel(`user_${username}`);
+    const userDocument = await userSpecificModel.findOne();
+    if (userDocument) {
+      userDocument.gltfObjects = userDocument.gltfObjects.filter(item => item._id.toString() !== id);
+      await userDocument.save();
+    } else {
+      return res.status(404).json({ message: `User document not found for username: ${username}` });
+    }
+
+    res.status(200).json({
+      message: 'Item deleted successfully from both global and user-specific collections',
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete item', message: error.message });
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to delete item',
+      error: error.message,
+    });
   }
 });
 
-// Endpoint to retrieve all items // 14
+
+// Endpoint to retrieve all items it is for Admin // 14
 app.get('/getdynamicscene',async (req, res) => {
   try {
     const document = await MainArrayModel.find();
@@ -594,6 +692,61 @@ app.get("/getTextures", async(req,res)=>{
     res.status(500).send("server Error!!!!...")
   }
 })
+
+
+
+
+
+// Add Gltf // 18 
+
+app.post('/glbloaders', upload.single('glbModel'), async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const glbUrl = req.file.path; 
+
+  
+    const newGLBModel = new GLBModel({ name, glbUrl });
+    const savedModel = await newGLBModel.save();
+
+    res.status(201).json({
+      message: 'GLB model uploaded successfully',
+      data: savedModel,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to upload GLB model',
+      error: error.message,
+    });
+  }
+});
+
+
+
+
+// Get Gltf // 19 
+
+app.get('/glbloaders', async (req, res) => {
+  try {
+    const models = await GLBModel.find();
+    res.status(200).json({
+      message: 'GLB models retrieved successfully',
+      data: models,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Failed to retrieve GLB models',
+      error: error.message,
+    });
+  }
+});
+
 
 
 // Start Server
