@@ -558,42 +558,52 @@ app.put('/dynamicscene/edit', async (req, res) => {
 
 
 // delete the dynamicScene Data  // 13
+
 app.delete('/dynamicscene', async (req, res) => {
   try {
-    const { username, id } = req.body;
+    const { projectName, username } = req.body;
 
-    if (!id || !username) {
-      return res.status(400).json({ message: 'ID and username are required' });
+    // Validate input
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+    if (!projectName) {
+      return res.status(400).json({ message: 'Project name is required' });
     }
 
-    const globalDocument = await MainArrayModel.findOne();
-    if (globalDocument) {
-      globalDocument.gltfObjects = globalDocument.gltfObjects.filter(item => item._id.toString() !== id);
-      await globalDocument.save();
-    } else {
-      return res.status(404).json({ message: 'Global document not found' });
-    }
+    // Retrieve user-specific model
+    const userSpecificModel = getUserSpecificModel(`user_${username}_datas`);
 
-    const userSpecificModel = getUserSpecificModel(`user_${username}`);
-    const userDocument = await userSpecificModel.findOne();
-    if (userDocument) {
-      userDocument.gltfObjects = userDocument.gltfObjects.filter(item => item._id.toString() !== id);
-      await userDocument.save();
-    } else {
-      return res.status(404).json({ message: `User document not found for username: ${username}` });
+    // Delete document from the user-specific collection
+    const deleteResult = await userSpecificModel.findOneAndDelete({ projectName });
+
+    if (!deleteResult) {
+      return res.status(404).json({ message: 'No matching data found to delete' });
     }
 
     res.status(200).json({
-      message: 'Item deleted successfully from both global and user-specific collections',
+      message: 'Data successfully deleted from user-specific collection',
+      deletedData: deleteResult,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      message: 'Failed to delete item',
+      message: 'Error deleting data',
       error: error.message,
     });
   }
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Endpoint to retrieve all items it is for Admin // 14
