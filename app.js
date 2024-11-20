@@ -455,6 +455,7 @@ app.post('/dynamicscene', async (req, res) => {
       message: 'Data successfully added to both global and user-specific collections',
       globalData: savedDocument,
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -510,6 +511,7 @@ app.put('/dynamicscene/edit', async (req, res) => {
 
     const globalDocument = await MainArrayModel.findOne();
     if (globalDocument) {
+
       if (updatedCoordinates) {
         globalDocument.coordinates = updatedCoordinates;
       }
@@ -518,6 +520,7 @@ app.put('/dynamicscene/edit', async (req, res) => {
       if (gltfObject) {
         gltfObject.gltfLink = updatedGltfLink || gltfObject.gltfLink;
         gltfObject.gltfScene = updatedGltfScene || gltfObject.gltfScene;
+
       }
 
       await globalDocument.save();
@@ -561,6 +564,7 @@ app.put('/dynamicscene/edit', async (req, res) => {
 
 app.delete('/dynamicscene', async (req, res) => {
   try {
+
     const { projectName, username } = req.body;
 
     // Validate input
