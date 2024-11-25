@@ -21,6 +21,7 @@ const GltfObjectSchema = new mongoose.Schema({
 
 const MainArraySchema = new mongoose.Schema({
   projectName: { type: String, required: true },
+  imageUrl:{ type:String,required:true},
   coordinates: {
     type: [[CoordinateSchema]], 
     required: true
@@ -28,7 +29,7 @@ const MainArraySchema = new mongoose.Schema({
   gltfObjects: {
     type: [GltfObjectSchema], 
     required: true
-  }
+  },
 }, { timestamps: true });
 
 
