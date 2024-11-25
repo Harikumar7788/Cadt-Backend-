@@ -1,0 +1,56 @@
+// EndPoints for login , (register, edit ,delete) for Admin 
+
+//  1. login  => /api/auth/login 
+//  2. Register => /api/auth/register
+//  3. GetClientsByAdmin  => /api/auth/getclients(Admin)
+//  4. updateClients => /api/auth/modifyclients/:id
+//  5. DeleteClients => /api/auth/clients/:id
+
+
+// Endpoints for Dynamic Scence(curd Operations)
+
+// 1. SaveProject =>  /dynamic/dynamicscene
+// 2. GetProjectBasedOnUsername => /dynamic/dynamicscene/:username
+// 3. EditSavedProject => /dynamic/dynamicscene/edit
+// 4. DeleteSavedProject => /dynamic/dynamicscene
+// 5. getAllProjectByAdmin => /dynamic/getdynamicscene(Admin)
+
+
+
+// Endpoints for Default Scene
+
+// 1. PostDefaultValues => /default/defaultscene
+// 2. getDefaultValues => /default/getdefaultscene
+
+
+// Endpoints for Texture(curd Operations)
+
+// 1. PostTextures => /texture/textures
+// 2. GetPostedTextures => /texture/getTextures
+// 3. UpdatedPostedTexture => /texture/edittextures/:id
+// 4. DeletePostedTexture => /texture/deletetextures/:id
+
+
+// EndPoints for glbModels(curd Operations)
+
+// 1. Post GlbModels => /glb/glbloaders 
+// 2. Get GlbModels => /glb/getglbloaders
+// 3. UpdateGlbModels => /glb/updateglbloaders/:id
+// 4. DeleteGlbModels => /glb/deleteglbloaders/:id
+
+
+
+
+// Endpoints for CourselDatas
+
+
+// 1. PostDatas => /coursal/postCoursalData
+// 2. GetPostedDatas => /coursal/getCoursalData
+
+
+// Endpoints for Furnitures 
+
+// 1. PostFurnitureModels => /furniture/furnitures
+// 2. GetFurnitureModels => /furniture/getfurnitures
+
+
