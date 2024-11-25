@@ -25,6 +25,7 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 const upload1 = multer({ dest: 'uploads/' });
 
 const authRoutes = require("./Routes/authrouter")
