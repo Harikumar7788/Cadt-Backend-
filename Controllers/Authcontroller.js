@@ -1,11 +1,13 @@
 const jwt = require('jsonwebtoken');
 const Admins = require('../Schema/Admin'); 
-
+const mongoose = require("mongoose")
 
 
 // login
 exports.login = async (req, res) => {
     const { username, password } = req.body;
+    console.log(username)
+    console.log(password)
   
     try {
       const dbResponse = await Admins.findOne({ username });

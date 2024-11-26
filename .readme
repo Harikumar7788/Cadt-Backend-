@@ -1,10 +1,10 @@
 // EndPoints for login , (register, edit ,delete) for Admin 
 
-//  1. login  => /api/auth/login 
-//  2. Register => /api/auth/register
-//  3. GetClientsByAdmin  => /api/auth/getclients(Admin)
-//  4. updateClients => /api/auth/modifyclients/:id
-//  5. DeleteClients => /api/auth/clients/:id
+//  1. login  => /auth/login 
+//  2. Register => /auth/register
+//  3. GetClientsByAdmin  => /auth/getclients (Admin)
+//  4. updateClients => /auth/modifyclients/:id
+//  5. DeleteClients => /auth/clients/:id
 
 
 // Endpoints for Dynamic Scence(curd Operations)
