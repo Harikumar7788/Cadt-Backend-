@@ -1,12 +1,24 @@
 // /Controllers/dynamicSceneController.js
 
 const MainArrayModel = require('../Schema/DynamicScene');
-const getUserSpecificModel = require('../Schema/UserSpecificprojects');
+const mongoose = require("mongoose")
+
+
+const getUserSpecificModel = (collectionName) => {
+  return mongoose.models[collectionName] || 
+    mongoose.model(collectionName, new mongoose.Schema({
+      projectName: String,
+      coordinates: Array,
+      gltfObjects: Array,
+      createdAt: { type: Date, default: Date.now },
+    }));
+};
 
 // Create dynamic scene data
 const createDynamicScene = async (req, res) => {
   try {
     const { projectName, coordinates, gltfObjects, username, imageUrl } = req.body;
+    console.log("Save Project Details", projectName , coordinates, gltfObjects, username,imageUrl)
 
     if (!username) {
       return res.status(400).json({ message: 'Username is required' });
@@ -36,11 +48,12 @@ const createDynamicScene = async (req, res) => {
 const getUserSpecificData = async (req, res) => {
   try {
     const { username } = req.params;
-    console.log(username)
+
 
     if (!username) {
       return res.status(400).json({ message: 'Username is required' });
     }
+
 
     const userSpecificModel = getUserSpecificModel(`user_${username}_datas`);
     const userSpecificData = await userSpecificModel.find();
@@ -118,7 +131,7 @@ const updateDynamicScene = async (req, res) => {
   }
 };
 
-// Delete dynamic scene data
+
 const deleteDynamicScene = async (req, res) => {
   try {
     const { projectName, username } = req.body;
@@ -130,15 +143,27 @@ const deleteDynamicScene = async (req, res) => {
       return res.status(400).json({ message: 'Project name is required' });
     }
 
-    const userSpecificModel = getUserSpecificModel(`user_${username}_datas`);
-    const deleteResult = await userSpecificModel.findOneAndDelete({ projectName });
+    let deleteResult;
 
-    if (!deleteResult) {
-      return res.status(404).json({ message: 'No matching data found to delete' });
+    if (username === 'Admin') {
+    
+      deleteResult = await MainArrayModel.findOneAndDelete({ projectName });
+
+      if (!deleteResult) {
+        return res.status(404).json({ message: 'No matching data found in mainarrays to delete' });
+      }
+    } else {
+      
+      const userSpecificModel = getUserSpecificModel(`user_${username}_datas`);
+      deleteResult = await userSpecificModel.findOneAndDelete({ projectName });
+
+      if (!deleteResult) {
+        return res.status(404).json({ message: 'No matching data found to delete in user-specific collection' });
+      }
     }
 
     res.status(200).json({
-      message: 'Data successfully deleted from user-specific collection',
+      message: 'Data successfully deleted',
       deletedData: deleteResult,
     });
   } catch (error) {
@@ -149,6 +174,9 @@ const deleteDynamicScene = async (req, res) => {
     });
   }
 };
+
+
+
 
 // Get all dynamic scene data (Admin only)
 const getAllDynamicScenes = async (req, res) => {
