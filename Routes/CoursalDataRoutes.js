@@ -6,7 +6,7 @@ const router = express.Router();
 const upload = multer();
 
 
-router.post("/postCoursalData", upload.single("image"), postCoursalData);
+router.post('/coursal', upload.single('image'), postCoursalData);
 router.get("/getCoursalData", getCoursalData);
 
 module.exports = router;

@@ -5,11 +5,6 @@ const jwt = require('jsonwebtoken');
 const cors = require("cors");
 const multer = require('multer');
 const cloudinary = require('./Utilis/cloudinary');
-const authenticateToken = require('./Utilis/Authication');
-const MainArrayModel = require('./Schema/DynamicScene')
-const Texture = require("./Schema/texture")
-const GLBModel = require('./Schema/glb');
-const Coursal = require("./Schema/CoursalData")
 
 const streamifier = require("streamifier");
 const app = express();

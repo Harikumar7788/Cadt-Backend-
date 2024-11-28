@@ -9,12 +9,11 @@ const postCoursalData = async (req, res) => {
       return res.status(400).json({ message: "No image uploaded" });
     }
 
-
     const uploadFromBuffer = (fileBuffer) =>
       new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream((error, result) => {
           if (result) {
-            resolve(result);
+            resolve(result.secure_url);
           } else {
             reject(error);
           }
@@ -22,13 +21,10 @@ const postCoursalData = async (req, res) => {
         streamifier.createReadStream(fileBuffer).pipe(uploadStream);
       });
 
-    const result = await uploadFromBuffer(req.file.buffer);
+    const imageUrl = await uploadFromBuffer(req.file.buffer);
 
-    // Extract fields from request body
     const { heading, description, button } = req.body;
-    const imageUrl = result.secure_url;
 
-    // Create new Coursal entry
     const coursalData = new Coursal({
       heading,
       description,
@@ -47,6 +43,7 @@ const postCoursalData = async (req, res) => {
     res.status(500).json({ message: "Failed to Upload Data" });
   }
 };
+
 
 const getCoursalData = async (req, res) => {
   try {
