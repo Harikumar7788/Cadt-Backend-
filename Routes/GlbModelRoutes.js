@@ -1,14 +1,32 @@
-const express = require('express');
+// routes/models.js
+const express = require("express");
 const router = express.Router();
-const glbController = require('../Controllers/GlbModelController'); 
-const multer = require('multer');
- 
+const multer = require("multer");
+const path = require("path");
 
-const upload = multer();
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); 
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
-router.post('/glbloaders', upload.single('glbModel'), glbController.uploadGLBModel);
-router.get('/getglbloaders', glbController.getGLBModels);
-router.put('/updateglbloaders/:id', upload.single('glbModel'), glbController.updateGLBModel);
-router.delete('/deleteglbloaders/:id', glbController.deleteGLBModel);
+const upload = multer({ storage });
+
+const {
+  getModels,
+  getModelById,
+  uploadModel,
+  updateModel,
+  deleteModel,
+} = require("../Controllers/GlbModelController");
+
+router.get("/getglbloaders", getModels);
+router.get("/:id", getModelById);
+router.post("/glbloaders", upload.single("file"), uploadModel);
+router.put("/updateglb/:id", upload.single("file"), updateModel);
+router.delete("/:id", deleteModel);
 
 module.exports = router;

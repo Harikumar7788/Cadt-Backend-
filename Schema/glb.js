@@ -1,30 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const GLBModelSchema = new mongoose.Schema(
-  {
-    modelType: {
-      type: String,
-      required: true,
-      index: true,
-    },
-    category: {
-      type: String,
-      required: true,
-      index: true,    
-    },
-    glbUrl: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function (value) {
-          return /^(https?:\/\/).+$/.test(value);
-        },
-        message: (props) => `${props.value} is not a valid URL`,
-      },
-    },
-  },
-  { timestamps: true }
-);
+const GlbModelSchema = new mongoose.Schema({
+  category: { type: String, required: true },
+  modelType: { type: String, required: true },
+  filePath: { type: String, required: true }, 
+  imagePath: { type: String }, 
+});
 
-const GLBModel = mongoose.model('GLBModel', GLBModelSchema);
-module.exports = GLBModel;
+module.exports = mongoose.model("GlbModel", GlbModelSchema);
