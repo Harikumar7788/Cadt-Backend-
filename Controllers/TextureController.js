@@ -114,7 +114,7 @@ const deleteTexture = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedTexture = await Texture.findByIdAndDelete(id);
+    const deletedTexture = await Textre.findByIdAndDelete(id);
     if (!deletedTexture) {
       return res.status(404).send("Texture not found");
     }

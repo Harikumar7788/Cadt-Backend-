@@ -1,113 +1,129 @@
-const GLBModel = require('../Schema/glb'); 
-const cloudinary = require('cloudinary').v2;
+const Model = require("../Schema/glb");
+const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
 
-exports.uploadGLBModel = async (req, res) => {
+
+
+
+exports.getModels = async (req, res) => {
+  try {
+    const models = await Model.find();
+    res.status(200).json(models);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch models", details: err.message });
+  }
+};
+
+
+exports.getModelById = async (req, res) => {
+  try {
+    const model = await Model.findById(req.params.id);
+    if (!model) return res.status(404).json({ error: "Model not found" });
+    res.status(200).json(model);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch model", details: err.message });
+  }
+};
+
+
+exports.uploadModel = async (req, res) => {
   try {
     const { category, modelType } = req.body;
+    console.log("Uploaded value ", category, modelType)
 
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const uploadResponse = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: 'auto', folder: 'glb_models/' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
+    const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: "auto", 
+      folder: "models",     
     });
 
-    const glbUrl = uploadResponse.secure_url;
-    const newGLBModel = new GLBModel({ modelType, category, glbUrl });
-    const savedModel = await newGLBModel.save();
+   
+    fs.unlinkSync(req.file.path);
 
-    res.status(201).json({
-      message: 'GLB model uploaded successfully',
-      data: savedModel,
+
+    const newModel = new Model({
+      category,
+      modelType,
+      filePath: cloudinaryResponse.secure_url, 
     });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to upload GLB model',
-      error: error.message,
-    });
+
+    await newModel.save();
+    res.status(201).json({ message: "Model uploaded successfully", model: newModel });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to upload model", details: err.message });
   }
 };
 
-exports.getGLBModels = async (req, res) => {
-  try {
-    const models = await GLBModel.find();
-    res.status(200).json({
-      message: 'GLB models retrieved successfully',
-      data: models,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to retrieve GLB models',
-      error: error.message,
-    });
-  }
-};
-
-exports.updateGLBModel = async (req, res) => {
+exports.updateModel = async (req, res) => {
   try {
     const { id } = req.params;
     const { category, modelType } = req.body;
 
-    const glbModel = await GLBModel.findById(id);
-    if (!glbModel) {
-      return res.status(404).json({ message: 'GLB model not found' });
+    console.log("Request Body:", req.body);  
+    console.log("File Uploaded:", req.file ? req.file.path : "No file uploaded");
+
+    const model = await Model.findById(id);
+    if (!model) {
+      return res.status(404).json({ error: "Model not found" });
     }
+
 
     if (req.file) {
-      const uploadResponse = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { resource_type: 'auto', folder: 'glb_models/' },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        stream.end(req.file.buffer);
+    
+      if (model.filePath) {
+        const publicId = model.filePath.split("/").pop().split(".")[0]; 
+        await cloudinary.uploader.destroy(`models/${publicId}`);
+      }
+
+      const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "auto",
+        folder: "models",
       });
-      glbModel.glbUrl = uploadResponse.secure_url;
+
+      if (!cloudinaryResponse || !cloudinaryResponse.secure_url) {
+        throw new Error("Cloudinary upload failed");
+      }
+
+      model.filePath = cloudinaryResponse.secure_url;
+      fs.unlinkSync(req.file.path); // Delete the temporary file from local storage
     }
 
-    if (category) glbModel.category = category;
-    if (modelType) glbModel.modelType = modelType;
+    // Update other fields
+    model.category = category || model.category;
+    model.modelType = modelType || model.modelType;
 
-    const updatedModel = await glbModel.save();
+    // Save the updated model
+    const updatedModel = await model.save();
+    console.log("Model updated successfully:", updatedModel);
 
-    res.status(200).json({
-      message: 'GLB model updated successfully',
-      data: updatedModel,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to update GLB model',
-      error: error.message,
-    });
+    res.status(200).json({ message: "Model updated successfully", model: updatedModel });
+  } catch (err) {
+    console.error("Error updating model:", err);
+    res.status(500).json({ error: "Failed to update model", details: err.message });
   }
 };
 
-exports.deleteGLBModel = async (req, res) => {
+
+
+// Delete a model
+exports.deleteModel = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedModel = await GLBModel.findByIdAndDelete(id);
-    if (!deletedModel) {
-      return res.status(404).json({ message: 'GLB model not found' });
-    }
+    const model = await Model.findById(id);
+    if (!model) return res.status(404).json({ error: "Model not found" });
 
-    res.status(200).json({
-      message: 'GLB model deleted successfully',
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to delete GLB model',
-      error: error.message,
-    });
+  
+    const publicId = model.filePath.split("/").pop().split(".")[0];
+    await cloudinary.uploader.destroy(`models/${publicId}`);
+
+  
+    await model.remove();
+    res.status(200).json({ message: "Model deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete model", details: err.message });
   }
 };
