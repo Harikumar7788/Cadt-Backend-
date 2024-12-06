@@ -28,8 +28,8 @@ exports.getModelById = async (req, res) => {
 
 exports.uploadModel = async (req, res) => {
   try {
-    const { category, modelType } = req.body;
-    console.log("Uploaded value ", category, modelType)
+    const { category, modelType, variant } = req.body;  
+    console.log("Uploaded value ", category, modelType, variant);
 
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -40,14 +40,13 @@ exports.uploadModel = async (req, res) => {
       folder: "models",     
     });
 
-   
-    fs.unlinkSync(req.file.path);
-
+    fs.unlinkSync(req.file.path);  
 
     const newModel = new Model({
       category,
       modelType,
       filePath: cloudinaryResponse.secure_url, 
+      variant,  
     });
 
     await newModel.save();
@@ -60,8 +59,7 @@ exports.uploadModel = async (req, res) => {
 exports.updateModel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category, modelType } = req.body;
-
+    const { category, modelType, variant } = req.body;
     console.log("Request Body:", req.body);  
     console.log("File Uploaded:", req.file ? req.file.path : "No file uploaded");
 
@@ -70,9 +68,7 @@ exports.updateModel = async (req, res) => {
       return res.status(404).json({ error: "Model not found" });
     }
 
-
     if (req.file) {
-    
       if (model.filePath) {
         const publicId = model.filePath.split("/").pop().split(".")[0]; 
         await cloudinary.uploader.destroy(`models/${publicId}`);
@@ -88,14 +84,15 @@ exports.updateModel = async (req, res) => {
       }
 
       model.filePath = cloudinaryResponse.secure_url;
-      fs.unlinkSync(req.file.path); // Delete the temporary file from local storage
+      fs.unlinkSync(req.file.path);
     }
 
-    // Update other fields
+
     model.category = category || model.category;
     model.modelType = modelType || model.modelType;
+    model.variant = variant || model.variant;  
 
-    // Save the updated model
+  
     const updatedModel = await model.save();
     console.log("Model updated successfully:", updatedModel);
 
@@ -108,7 +105,7 @@ exports.updateModel = async (req, res) => {
 
 
 
-// Delete a model
+
 exports.deleteModel = async (req, res) => {
   try {
     const { id } = req.params;
